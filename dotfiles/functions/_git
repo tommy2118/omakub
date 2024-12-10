@@ -1,0 +1,122 @@
+#compdef git gitk
+
+# Zsh completion wrapper for Git
+#
+# Copyright (c) 2012-2020 Felipe Contreras <felipe.contreras@gmail.com>
+#
+# The recommended way to install this script is to make a copy of it as a
+# file named '_git' inside any directory in your fpath.
+#
+# Example:
+#  1. Create a directory '~/.zsh/'.
+#  2. Copy this file to '~/.zsh/_git'.
+#  3. Add the following to your ~/.zshrc file:
+#     fpath=(~/.zsh $fpath)
+#
+# Git's Bash completion script must be installed. The script will attempt to
+# locate it automatically. You can specify its location manually if needed:
+#
+#  zstyle ':completion:*:*:git:*' script /path/to/git-completion.bash
+
+zstyle -T ':completion:*:*:git:*' tag-order && \
+	zstyle ':completion:*:*:git:*' tag-order 'common-commands'
+
+# Locate the Git Bash completion script
+zstyle -s ":completion:*:*:git:*" script script
+if [ -z "$script" ]; then
+	local -a locations
+	local e bash_completion
+
+	bash_completion=$(pkg-config --variable=completionsdir bash-completion 2>/dev/null) ||
+		bash_completion='/usr/share/bash-completion/completions/'
+
+	locations=(
+		"$(dirname ${funcsourcetrace[1]%:*})"/git-completion.bash
+		"$HOME/.local/share/bash-completion/completions/git"
+		"$bash_completion/git"
+		'/etc/bash_completion.d/git' # Debian-based systems
+		'/usr/local/etc/bash_completion.d/git-completion.bash' # macOS with Homebrew
+		'/opt/homebrew/etc/bash_completion.d/git-completion.bash' # macOS (M1/M2)
+		)
+	for e in $locations; do
+		test -f $e && script="$e" && break
+	done
+fi
+
+# Source the Git completion script
+if [ -f "$script" ]; then
+	local old_complete="$functions[complete]"
+	functions[complete]=:
+	GIT_SOURCING_ZSH_COMPLETION=y . "$script"
+	functions[complete]="$old_complete"
+else
+	echo "Error: Unable to locate git-completion.bash."
+	echo "Install the Git Bash completion script or specify its location in your ~/.zshrc:"
+	echo "  zstyle ':completion:*:*:git:*' script /path/to/git-completion.bash"
+	return 1
+fi
+
+# Helper functions for completion
+__gitcomp ()
+{
+	emulate -L zsh
+	local cur_="${3-$cur}"
+
+	case "$cur_" in
+	--*=) ;;
+	--no-*)
+		local c IFS=$' \t\n'
+		local -a array
+		for c in ${=1}; do
+			[[ $c == "--" ]] && continue
+			c="$c${4-}"
+			case $c in
+			--*=|*.) ;;
+			*) c="$c " ;;
+			esac
+			array+=("$c")
+		done
+		compset -P '*[=:]'
+		compadd -Q -S '' -p "${2-}" -a -- array && _ret=0
+		;;
+	*)
+		local c IFS=$' \t\n'
+		local -a array
+		for c in ${=1}; do
+			[[ $c == "--" ]] && c="--no-...${4-}"
+			c="$c${4-}"
+			case $c in
+			--*=|*.) ;;
+			*) c="$c " ;;
+			esac
+			array+=("$c")
+		done
+		compset -P '*[=:]'
+		compadd -Q -S '' -p "${2-}" -a -- array && _ret=0
+		;;
+	esac
+}
+
+_git ()
+{
+	local _ret=1
+	local cur cword prev
+	cur=${words[CURRENT]}
+	prev=${words[CURRENT-1]}
+	let cword=CURRENT-1
+
+	if (( $+functions[__${service}_zsh_main] )); then
+		__${service}_zsh_main
+	elif (( $+functions[__${service}_main] )); then
+		emulate ksh -c __${service}_main
+	elif (( $+functions[_${service}] )); then
+		emulate ksh -c _${service}
+	elif (( $+functions[_${service//-/_}] )); then
+		emulate ksh -c _${service//-/_}
+	fi
+
+	let _ret && _default && _ret=0
+	return _ret
+}
+
+_git

@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+# Script to log into Vault using a GitHub personal access token.
+
+# Ensure Vault is installed
+if ! command -v vault &>/dev/null; then
+  echo "Error: Vault is not installed. Please install it using your OS's package manager."
+  exit 1
+fi
+
+# Ensure VAULT_ADDR is set
+if [[ -z $VAULT_ADDR ]]; then
+  echo "Error: \$VAULT_ADDR is not set in your environment."
+  echo "Please add VAULT_ADDR=https://vault.ke-eng.io to your shell configuration file (e.g., .zshrc or .bashrc)."
+  exit 1
+fi
+
+# Provide guidance for GitHub token creation if the token file doesn't exist
+TOKEN_HELP="Error: Missing ~/.github-token file.\n\nCreate a .github-token file in your home directory containing your GitHub personal access token.\nRefer to the GitHub documentation for details:\nhttps://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line"
+if [[ ! -f ~/.github-token ]]; then
+  echo -e "${TOKEN_HELP}"
+  exit 1
+fi
+
+# Attempt to log into Vault using the GitHub token
+if vault login -no-print -method=github token="$(cat ~/.github-token)"; then
+  echo "Successfully logged into Vault. Token is stored in ~/.vault-token."
+  exit 0
+else
+  c=$?
+  echo "Error: Failed to log into Vault. See the above error message for details."
+  exit $c
+fi

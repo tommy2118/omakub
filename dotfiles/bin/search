@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+# Quick search in a directory for a string ($1).
+# Searches directories typically ignored by ack (like .git).
+
+set -e
+
+# Function to display usage information
+usage() {
+  echo "Usage: $(basename "$0") <search-string>"
+  echo "Quickly search for a string in the current directory."
+  exit 1
+}
+
+# Ensure a search string is provided
+if [ -z "$1" ]; then
+  usage
+fi
+
+# Check if ack or ack-grep is installed and use it
+if command -v ack-grep >/dev/null 2>&1; then
+  ack-grep -iru "$1"
+elif command -v ack >/dev/null 2>&1; then
+  ack -iru "$1"
+else
+  echo "Error: Neither 'ack' nor 'ack-grep' is installed. Please install one of them and try again."
+  exit 1
+fi

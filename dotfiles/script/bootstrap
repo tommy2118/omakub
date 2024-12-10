@@ -1,0 +1,182 @@
+#!/usr/bin/env bash
+#
+# Connect the dots - Works on both Ubuntu and macOS
+
+cd "$(dirname "$0")/.."
+DOTFILES_ROOT=$(pwd)
+
+set -e
+
+echo
+
+info () {
+  printf "  [ \033[00;34m..\033[0m ] $1\n"
+}
+
+user () {
+  printf "\r  [ \033[0;33m?\033[0m ] $1 "
+}
+
+success () {
+  printf "\r\033[2K  [ \033[00;32mOK\033[0m ] $1\n"
+}
+
+fail () {
+  printf "\r\033[2K  [\033[0;31mFAIL\033[0m] $1\n"
+  echo
+  exit 1
+}
+
+detect_os () {
+  if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    echo "ubuntu"
+  elif [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "macos"
+  else
+    fail "Unsupported operating system: $OSTYPE"
+  fi
+}
+
+setup_gitconfig_local () {
+  if ! [ -f "$HOME/.gitconfig.local" ]; then
+    info 'Setting up gitconfig'
+
+    user ' - What is your GitHub author name (e.g., first/last name)?'
+    read -e git_authorname
+    user ' - What is your GitHub author email?'
+    read -e git_authoremail
+
+    sed -e "s/AUTHORNAME/$git_authorname/g" -e "s/AUTHOREMAIL/${git_authoremail}/g" git/gitconfig.local.example > "$HOME/.gitconfig.local"
+
+    success 'gitconfig'
+  fi
+
+  mkdir -p "${HOME}/tmp"
+
+  if compgen -G "${HOME}/.ssh/id_*.pub" > /dev/null; then
+    info "SSH keys already exist!"
+    echo
+    echo "Skipping SSH key generation…"
+  else
+    ssh-keygen -t rsa -C "${git_authoremail}"
+    cat "$HOME/.ssh/id_*.pub"
+
+    if [[ $(detect_os) == "ubuntu" ]] && command -v xclip &> /dev/null; then
+      cat "$HOME/.ssh/id_*.pub" | xclip -selection clipboard
+      info "Your SSH public key has been copied to the clipboard."
+    elif [[ $(detect_os) == "macos" ]]; then
+      cat "$HOME/.ssh/id_*.pub" | pbcopy
+      info "Your SSH public key has been copied to the clipboard."
+    else
+      info "Clipboard functionality is unavailable. Copy the key manually."
+    fi
+
+    echo "Add it to GitHub.com (if it's not already there) and press any key to continue."
+    read -n 1
+  fi
+
+  if [ ! -f "$HOME/.ssh/config" ]; then
+    echo "Writing .ssh/config"
+cat > "$HOME/.ssh/config" <<SSHCONFIG
+ServerAliveInterval 60
+ServerAliveCountMax 3
+ForwardAgent yes
+
+Host *
+  IdentityFile ~/.ssh/id_rsa
+  AddKeysToAgent yes
+SSHCONFIG
+  fi
+}
+
+link_file () {
+  local src=$1 dst=$2
+
+  local overwrite= backup= skip=
+  local action=
+
+  if [ -f "$dst" -o -d "$dst" -o -L "$dst" ]; then
+
+    if [ "$overwrite_all" == "false" ] && [ "$backup_all" == "false" ] && [ "$skip_all" == "false" ]; then
+
+      local currentSrc
+      currentSrc=$(readlink "$dst" || readlink -f "$dst")  # Use appropriate readlink for macOS/Ubuntu
+
+      if [ "$currentSrc" == "$src" ]; then
+        skip=true
+      else
+        user "File already exists: $(basename "$src"), what do you want to do? [s]kip, [S]kip all, [o]verwrite, [O]verwrite all, [b]ackup, [B]ackup all?"
+        read -n 1 action
+
+        case "$action" in
+          o )
+            overwrite=true;;
+          O )
+            overwrite_all=true;;
+          b )
+            backup=true;;
+          B )
+            backup_all=true;;
+          s )
+            skip=true;;
+          S )
+            skip_all=true;;
+          * )
+            ;;
+        esac
+      fi
+    fi
+
+    overwrite=${overwrite:-$overwrite_all}
+    backup=${backup:-$backup_all}
+    skip=${skip:-$skip_all}
+
+    if [ "$overwrite" == "true" ]; then
+      rm -rf "$dst"
+      success "Removed $dst"
+    fi
+
+    if [ "$backup" == "true" ]; then
+      mv "$dst" "${dst}.backup"
+      success "Moved $dst to ${dst}.backup"
+    fi
+
+    if [ "$skip" == "true" ]; then
+      success "Skipped $src"
+    fi
+  fi
+
+  if [ "$skip" != "true" ]; then
+    ln -s "$1" "$2"
+    success "Linked $1 to $2"
+  fi
+}
+
+install_dotfiles () {
+  info 'Installing dotfiles'
+
+  local overwrite_all=false backup_all=false skip_all=false
+
+  for src in $(find "$DOTFILES_ROOT" -maxdepth 2 -name '*.symlink'); do
+    dst="$HOME/.$(basename "${src%.*}")"
+    link_file "$src" "$dst"
+  done
+}
+
+fd=0 # stdin
+# Set up gitconfig.local only in an interactive shell
+if [[ -t "$fd" || -p /dev/stdin ]]; then
+  setup_gitconfig_local
+fi
+
+install_dotfiles
+
+info "Installing dependencies"
+if source bin/dot; then
+  success "Dependencies installed"
+else
+  fail "Error installing dependencies"
+fi
+
+echo
+echo '  All installed!'

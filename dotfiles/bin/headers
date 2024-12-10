@@ -1,0 +1,15 @@
+#!/bin/sh
+#
+# Inspect HTTP headers for a given URL
+# Usage: headers <URL>
+# Example: headers https://example.com
+
+if [ $# -eq 0 ]; then
+  echo "Usage: $0 <URL>"
+  exit 1
+fi
+
+curl -sv "$@" 2>&1 >/dev/null |  # Make a request with verbose output
+  grep -v "^\*" |               # Filter out lines starting with '*'
+  grep -v "^}" |                # Filter out lines starting with '}'
+  cut -c3-                      # Remove the first two characters

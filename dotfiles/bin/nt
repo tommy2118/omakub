@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Fetch Nomad ACL token based on the specified group
+
+NOMAD_ACL_GROUP=${1}
+
+usage() {
+  echo "Usage:"
+  echo "  $(basename "${0}") <NOMAD_ACL_GROUP>"
+  echo "Options:"
+  echo "  \"operations\", \"development\", or \"trusted\" -- These are tied directly to the GitHub groups you are a part of."
+  echo "  Note: The \"development\" group has restricted access. For broader permissions, use \"operations\" or \"trusted\"."
+  exit 1
+}
+
+# Ensure an ACL group is specified
+[[ -z $NOMAD_ACL_GROUP ]] && usage
+
+# Ensure the "vt" command exists and is executable
+if ! command -v vt &>/dev/null; then
+  echo "Error: Missing \"vt\" command. Ensure your ~/.dotfiles repo is correctly configured."
+  exit 1
+fi
+
+# Test "vt" execution
+vt >/dev/null || { echo "Error: \"vt\" command failed."; exit 1; }
+
+# Retrieve the Nomad token
+NOMAD_TOKEN=$(vault read -field=secret_id nomad/creds/"${NOMAD_ACL_GROUP}" 2>/dev/null)
+
+# Ensure a token was returned
+if [[ -z $NOMAD_TOKEN ]]; then
+  echo "Error: Nomad did not return a token. This likely means you don't have access to the \"${NOMAD_ACL_GROUP}\" group."
+  exit 1
+fi
+
+# Output the token
+echo "NOMAD_TOKEN=$NOMAD_TOKEN"

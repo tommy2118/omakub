@@ -1,0 +1,83 @@
+#!/bin/sh
+#
+# dot
+#
+# `dot` handles installation, updates, and maintenance tasks. 
+# Run it periodically to ensure your system and dotfiles are up-to-date.
+
+export DOTHOME="$HOME/.dotfiles"
+
+# Detect OS
+DISTRO=$(uname)
+
+case $DISTRO in
+  'Linux')
+    echo "Updating Linux system packages..."
+    sudo apt-get update -qq && sudo apt-get upgrade -y -qq
+    ;;
+  'Darwin')
+    echo "Updating macOS system configurations..."
+
+    # Set macOS defaults
+    if [ -f "$DOTHOME/osx/set-defaults.sh" ]; then
+      echo "Setting macOS defaults..."
+      sh "$DOTHOME/osx/set-defaults.sh"
+    else
+      echo "macOS defaults script not found. Skipping..."
+    fi
+
+    # Install/upgrade Node.js
+    if [ -f "$DOTHOME/node/install.sh" ]; then
+      echo "Updating Node.js..."
+      sh "$DOTHOME/node/install.sh" 2>&1
+    else
+      echo "Node.js install script not found. Skipping..."
+    fi
+
+    # Install/upgrade Homebrew packages
+    if [ -f "$DOTHOME/homebrew/install.sh" ]; then
+      echo "Updating Homebrew and its packages..."
+      sh "$DOTHOME/homebrew/install.sh" 2>&1
+    else
+      echo "Homebrew install script not found. Skipping..."
+    fi
+
+    # Install/upgrade Docker
+    if [ -f "$DOTHOME/docker/install.sh" ]; then
+      echo "Updating Docker..."
+      sh "$DOTHOME/docker/install.sh" 2>&1
+    else
+      echo "Docker install script not found. Skipping..."
+    fi
+
+    # Install/upgrade Rubies
+    if [ -f "$DOTHOME/ruby/install.sh" ]; then
+      echo "Updating Ruby versions..."
+      sh "$DOTHOME/ruby/install.sh" 2>&1
+    else
+      echo "Ruby install script not found. Skipping..."
+    fi
+
+    # Configure databases
+    if [ -f "$DOTHOME/databases/install.sh" ]; then
+      echo "Updating database configurations..."
+      sh "$DOTHOME/databases/install.sh" 2>&1
+    else
+      echo "Database install script not found. Skipping..."
+    fi
+    ;;
+  *)
+    echo "Unsupported OS: $DISTRO. Exiting."
+    exit 1
+    ;;
+esac
+
+# Install Vim bundles
+if [ -f "$DOTHOME/vim/install.sh" ]; then
+  echo "Installing/updating Vim bundles..."
+  sh "$DOTHOME/vim/install.sh" 2>&1
+else
+  echo "Vim install script not found. Skipping..."
+fi
+
+echo "All tasks completed."

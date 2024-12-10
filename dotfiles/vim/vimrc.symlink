@@ -1,0 +1,45 @@
+" Load Pathogen for plugin management
+runtime! autoload/pathogen.vim
+if exists('g:loaded_pathogen')
+  call pathogen#infect(expand('~/.vimbundles/{}'))
+endif
+
+" Enable syntax highlighting and advanced filetype behaviors
+syntax on
+filetype plugin indent on
+
+" General settings
+set visualbell                          " Disable audio bell; use visual indicator
+set wildmenu                            " Enable command-line completion menu
+set wildmode=list:longest,full          " Enhanced completion options
+
+" Split window behavior
+set splitright                          " Open vertical splits to the right
+set splitbelow                          " Open horizontal splits below
+
+" Manage buffer behavior
+set hidden                              " Allow unsaved buffers to remain in the background
+
+" GUI-specific settings
+if has("gui_running")
+  set guifont=Monaco:h16                " Set font for GUI (adjust for your system)
+  set guioptions-=T                     " Remove toolbar
+  set guioptions-=e                     " Remove scrollbars
+  set guioptions-=L
+  set guioptions-=r
+  set shell=bash                        " Set shell for GUI Vim
+endif
+
+" Automatically set window size when in GUI
+augroup vimrc
+  autocmd!
+  autocmd GuiEnter * set columns=120 lines=70 number
+augroup END
+
+" Mapping for easy quit
+map Q :qa
+
+" Load local .vimrc if it exists (for machine-specific or user-specific settings)
+if filereadable(expand('~/.vimrc.local'))
+  source ~/.vimrc.local
+endif

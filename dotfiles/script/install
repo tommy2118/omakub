@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+#
+# Run all dotfiles installers.
+
+set -e  # Exit immediately if any command fails
+
+# Navigate to the root of the dotfiles directory
+cd "$(dirname "$0")/.."
+
+echo "Running all dotfiles installers..."
+
+# Find and execute all `install.sh` scripts iteratively
+find . -name install.sh | while read -r installer; do
+  echo "Executing: $installer"
+  bash "$installer"
+done
+
+echo "All installers executed successfully!"
