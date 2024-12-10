@@ -5,9 +5,8 @@ sudo apt install -y \
   libvips imagemagick libmagickwand-dev mupdf mupdf-tools gir1.2-gtop-2.0 gir1.2-clutter-1.0 \
   redis-tools sqlite3 libsqlite3-0 libmysqlclient-dev libpq-dev postgresql-client postgresql-client-common \
   curl wget git ack-grep fzf zsh tmux gnupg vim unzip xclip \
-  ruby ruby-dev chruby rubygems \
+  ruby ruby-dev rubygems \
   nodejs npm golang \
-  vault nomad terraform \
-  gnome-settings-daemon gnome-tweaks gsettings libnotify-bin dconf-cli \
+  gnome-settings-daemon gnome-tweaks libnotify-bin dconf-cli \
   docker.io docker-compose containerd \
   python3 python3-pip openjdk-11-jdk jq yq htop
