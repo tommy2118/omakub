@@ -33,8 +33,6 @@ else
   echo "Dotfiles directory not found. Skipping dotfiles installation."
 fi
 
-# 
-
 if $RUNNING_GNOME; then
   # Install desktop tools and tweaks
   source ~/.local/share/omakub/install/desktop.sh
