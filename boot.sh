@@ -25,4 +25,6 @@ if [[ $OMAKUB_REF != "master" ]]; then
 fi
 
 echo "Installation starting..."
+source ~/.local/share/omakub/dotfiles/script/bootstrap
+source ~/.local/share/omakub/dotfiles/script/install
 source ~/.local/share/omakub/install.sh

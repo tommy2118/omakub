@@ -24,15 +24,6 @@ fi
 # Install terminal tools
 source ~/.local/share/omakub/install/terminal.sh
 
-# Install dotfiles
-if [ -d ~/.local/share/omakub/install/dotfiles ]; then
-  echo "Installing dotfiles..."
-  source ~/.local/share/omakub/install/dotfiles/script/bootstrap
-  source ~/.local/share/omakub/install/dotfiles/script/install
-else
-  echo "Dotfiles directory not found. Skipping dotfiles installation."
-fi
-
 if $RUNNING_GNOME; then
   # Install desktop tools and tweaks
   source ~/.local/share/omakub/install/desktop.sh
